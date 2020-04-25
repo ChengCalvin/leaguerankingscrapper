@@ -1,5 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
+import pandas as pd
+import json
 
 url = 'https://na.op.gg/ranking/ladder/'
 
@@ -11,6 +13,9 @@ soup = BeautifulSoup(page.content, 'html.parser')
 
 player_list = []
 total_game = []
+game_data = []
+count = 0
+
 for name in soup.find_all("td", class_="select_summoner ranking-table__cell ranking-table__cell--summoner"):
     player_list.append(name.get_text())
     # print(name.get_text())
@@ -38,15 +43,15 @@ for page in range(2, 10):
         game_team = []
         teams = scoreboard.find_all('div', {'class': 'Team'})
 
-        # for i in range(len(teams)):
         team_text1 = teams[0].get_text().split('\n')
-        # print(team_text)
-        team_a = ['Team A: ' + str(team_text1[4]) + ', ' + str(team_text1[13]) + ', ' + str(team_text1[22]) + ', ' + str(
-            team_text1[31]) + ', ' + str(team_text1[40])]
+
+        team_a = [str(team_text1[4]), str(team_text1[13]), str(team_text1[22]), str(team_text1[31]),
+                  str(team_text1[40])]
         game_team.append(team_a)
+
         team_text2 = teams[1].get_text().split('\n')
-        team_b = ['Team B: ' + str(team_text2[4]) + ', ' + str(team_text2[13]) + ', ' + str(team_text2[22]) + ', ' + str(
-            team_text2[31]) + ', ' + str(team_text2[40])]
+        team_b = [str(team_text2[4]), str(team_text2[13]), str(team_text2[22]), str(team_text2[31]),
+                  str(team_text2[40])]
         game_team.append(team_b)
 
         summoner_requesters = scoreboard.find_all('div', 'Summoner Requester')
@@ -55,13 +60,17 @@ for page in range(2, 10):
 
         for summoner_requester in summoner_requesters:
             summoner = summoner_requester.find_all('a')
-            #print(summoner.get_text())
             if str(summoner[0].get_text()) in team_text1 and ('Victory' in result):
-                game_team.append('Team A')
+                a_win = 'Team A'
+                game_team.append(a_win)
+                game_data.append({'Team A': team_a, 'Team B': team_b, 'Result': a_win})
+                count += 1
             else:
-                game_team.append('Team B')
+                b_win = 'Team B'
+                game_team.append(b_win)
+                game_data.append({'Team A': team_a, 'Team B': team_b, 'Result': b_win})
+                count += 1
 
 
-        #game_team.append(result)
-        #total_game.append(game_team) # every player has their own total game summing their match history
-        print(game_team)
+with open('gamedata.json', 'w') as f:
+  f.write(json.dumps({'data': game_data}))
