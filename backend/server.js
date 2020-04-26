@@ -17,22 +17,40 @@ const connection = mongoose.connection;
 connection.once('open', () => {
     console.log('MongoDB database connection established successfully')
 
-    var fs = require('fs');
-    var obj = JSON.parse(fs.readFileSync('./gamedata.json', 'utf8'));
+    let fs = require('fs');
+    let obj = JSON.parse(fs.readFileSync('./gamedata.json', 'utf8'));
 
-    var gameSchema = new mongoose.Schema ({
-        game_data: [{
-            Team A:
-        }]
-    })
+    let data = obj.data
 
-    var Game = mongoose.model('Game', gameSchema);
+    let gameSchema = new mongoose.Schema ({
+        'teamA' : Array,
+        'teamB' : Array,
+        'winner': String
+    }, {
+        writeConcern: {
+            w: 'majority',
+            j:true,
+            wtimeout: 1000
+        }
+    });
 
-    var game = new Game({
 
+    let Game = mongoose.model('Game', gameSchema, 'game');
+
+    data.forEach((game, _i) => {
+        let aGame = new Game({ 'teamA': game['Team A'], 'teamB' : game['Team B'] , 'winner': game['Result']});
+        aGame.save(function(err, game){
+            console.log('Attempting to write to mongo');
+            if (err) return console.log(err);
+            console.log('Saved one to game collection');
+            console.log(game);
+        })
     })
 
 })
+
+
+
 
 app.listen(port, () => {
     console.log(`Server is running on port: ${port}`);
